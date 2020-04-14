@@ -7,6 +7,8 @@ import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
 import com.example.learnjetpack.R
 import com.example.learnjetpack.model.DogBreed
+import com.example.learnjetpack.util.getProgressDrawable
+import com.example.learnjetpack.util.loadImage
 import kotlinx.android.synthetic.main.item_dog.view.*
 
 class DogListAdapter(private val dogsList:ArrayList<DogBreed>): RecyclerView.Adapter<DogListAdapter.DogViewHolder>()  {
@@ -33,6 +35,7 @@ class DogListAdapter(private val dogsList:ArrayList<DogBreed>): RecyclerView.Ada
         holder.view.setOnClickListener {
             Navigation.findNavController(it).navigate(R.id.listFragment)
         }
+        holder.view.imageView.loadImage(dogsList[position].urlImage, getProgressDrawable(holder.view.imageView.context))
 
     }
 }
