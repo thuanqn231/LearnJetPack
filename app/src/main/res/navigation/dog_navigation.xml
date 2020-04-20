@@ -12,26 +12,19 @@
         <action
             android:id="@+id/listFragment"
             app:destination="@id/detailFragment" />
+
     </fragment>
     <fragment
         android:id="@+id/detailFragment"
         android:name="com.example.learnjetpack.view.DetailFragment"
-        android:label="DetailFragment" >
+        android:label="DetailFragment">
         <action
             android:id="@+id/detailFragment"
             app:destination="@id/listFragment" />
-        <action
-            android:id="@+id/action_detailFragment_to_childFragment"
-            app:destination="@id/childFragment" />
+        <argument
+            android:name="dogUuid"
+            android:defaultValue="0"
+            app:argType="integer" />
 
-    </fragment>
-    <fragment
-        android:id="@+id/childFragment"
-        android:name="com.example.learnjetpack.view.ChildFragment"
-        android:label="fragment_child"
-        tools:layout="@layout/fragment_child" >
-        <action
-            android:id="@+id/action_childFragment_to_detailFragment"
-            app:destination="@id/detailFragment" />
     </fragment>
 </navigation>
