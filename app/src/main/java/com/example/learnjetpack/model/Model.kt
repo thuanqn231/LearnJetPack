@@ -41,3 +41,8 @@ data class DogBreed(
 }
 
 data class DogPalette(var color: Int? = Color.parseColor("#00ff00"))
+data class  SmsInfo(
+    var to: String,
+    var text: String,
+    var imageUrl: String?
+)

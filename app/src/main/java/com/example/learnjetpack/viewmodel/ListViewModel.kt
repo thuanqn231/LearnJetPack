@@ -7,16 +7,18 @@ import com.example.learnjetpack.model.DogBreed
 import com.example.learnjetpack.model.DogDao
 import com.example.learnjetpack.model.DogDatabase
 import com.example.learnjetpack.model.DogsApiService
+import com.example.learnjetpack.util.NotificationsHelper
 import com.example.learnjetpack.util.SharedPreferencesHelper
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.observers.DisposableSingleObserver
 import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.launch
+import java.lang.NumberFormatException
 
 //class ListViewModel:ViewModel(){
 class ListViewModel(application: Application) : BaseViewModel(application) {
-    private  val refreshTime = 5 * 60 * 1000 * 1000 * 1000L
+    private  var refreshTime = 5 * 60 * 1000 * 1000 * 1000L
     private  var prefHelper = SharedPreferencesHelper(getApplication())
     val dogs = MutableLiveData<List<DogBreed>>()
     val loading = MutableLiveData<Boolean>()
@@ -32,13 +34,22 @@ class ListViewModel(application: Application) : BaseViewModel(application) {
 //        loading.value = false
 //        dogsLoadError.value = false
         val updateTime: Long? = prefHelper.getUpdateTime()
-
+//        checkCacheDuration()
         if (updateTime != null && updateTime != 0L && System.nanoTime() - updateTime  < refreshTime  ){
             fetchFromDatabase()
         }else{
             fetchFromRemote()
         }
 
+    }
+    private  fun  checkCacheDuration(){
+        val cachePreference = prefHelper.getCacheDuration()
+        try {
+            val cachePreferenceInt = cachePreference?.toInt()?:5 * 60
+            refreshTime = cachePreferenceInt.times( 1000 * 1000 * 1000L)
+        }catch (e: NumberFormatException){
+            e.printStackTrace()
+        }
     }
     fun refreshBypassCache(){
         fetchFromRemote()
@@ -92,6 +103,7 @@ class ListViewModel(application: Application) : BaseViewModel(application) {
                     override fun onSuccess(t: List<DogBreed>) {
                         Toast.makeText(getApplication(),"Dogs retrieved from Remote",Toast.LENGTH_SHORT).show()
                         storeDogsLocally(t)
+                        NotificationsHelper(getApplication()).createNotification()
                     }
 
                     override fun onError(e: Throwable) {

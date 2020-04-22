@@ -1,15 +1,18 @@
 package com.example.learnjetpack.view
 
 import android.annotation.SuppressLint
+import android.app.PendingIntent
+import android.content.Intent
+import android.database.DatabaseUtils
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.telephony.SmsManager
 import android.text.TextUtils
 import android.util.Log
+import android.view.*
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -21,7 +24,10 @@ import com.bumptech.glide.request.transition.Transition
 
 import com.example.learnjetpack.R
 import com.example.learnjetpack.databinding.FragmentDetailBinding
+import com.example.learnjetpack.databinding.SendSmsDialogBinding
+import com.example.learnjetpack.model.DogBreed
 import com.example.learnjetpack.model.DogPalette
+import com.example.learnjetpack.model.SmsInfo
 import com.example.learnjetpack.util.getProgressDrawable
 import com.example.learnjetpack.util.loadImage
 import com.example.learnjetpack.viewmodel.DetailViewModel
@@ -46,15 +52,17 @@ abstract class AbsFragment : Fragment() {
 
 
 class DetailFragment : AbsFragment() {
+    private  var sendSmsStarted = false
     lateinit var viewModel: DetailViewModel
     var dogUuid = 0
     private lateinit var dataBinding: FragmentDetailBinding
-
+    private  var currentDog: DogBreed ?= null
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        setHasOptionsMenu(true)
         // Inflate the layout for this fragment
         dataBinding = DataBindingUtil.inflate(inflater, R.layout.fragment_detail, container, false)
 
@@ -79,7 +87,7 @@ class DetailFragment : AbsFragment() {
         viewModel.dogs.observe(this, Observer { dog ->
 
             Log.i("===", "=== dog :=="+Gson().toJson(dog))
-
+            currentDog = dog
             dog?.let {
                 dataBinding.dog = it
 
@@ -137,6 +145,57 @@ class DetailFragment : AbsFragment() {
                 })
         }
 
+
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        inflater.inflate(R.menu.detail_menu,menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId){
+            R.id.action_send_sms->{
+                    sendSmsStarted = true
+                (activity as MainActivity).checkSmsPermission()
+            }
+            R.id.action_share->{
+                val intent = Intent(Intent.ACTION_SEND)
+                intent.type="text/plain"
+                intent.putExtra(Intent.EXTRA_SUBJECT,"Check out this dog breed")
+                intent.putExtra(Intent.EXTRA_TEXT,"${currentDog?.dogBreed} bred for ${currentDog?.bredFor}")
+                intent.putExtra(Intent.EXTRA_STREAM,currentDog?.urlImage)
+                startActivity(Intent.createChooser(intent,"Share with"))
+            }
+        }
+        return super.onOptionsItemSelected(item)
+    }
+    fun onPermisionResult(permissionGranted:Boolean){
+        if(sendSmsStarted && permissionGranted){
+            context?.let {
+                val smsInfo = SmsInfo("","${currentDog?.dogBreed} bred for ${currentDog?.bredFor}",currentDog?.urlImage)
+                val  dialogBinding = DataBindingUtil.inflate<SendSmsDialogBinding>(LayoutInflater.from(it),R.layout.send_sms_dialog,null,false)
+                AlertDialog.Builder(it).setView(dialogBinding.root)
+                    .setPositiveButton("Send SMS"){
+                        dialog, which ->
+                        if(!dialogBinding.smdDestination.text.isNullOrEmpty()){
+                            smsInfo.to = dialogBinding.smdDestination.text.toString()
+                            sendSms(smsInfo)
+                        }
+                    }
+                    .setPositiveButton("Cancel"){
+                        dialog, which ->
+                    }.show()
+                dialogBinding.smsInfo = smsInfo
+            }
+          
+        }
+    }
+    fun sendSms(smsInfo:SmsInfo){
+        val intent = Intent(context,MainActivity::class.java)
+        val pi = PendingIntent.getActivity(context,0,intent,0)
+        val sms = SmsManager.getDefault()
+        sms.sendTextMessage(smsInfo.to, null,smsInfo.text,pi,null)
 
     }
 
